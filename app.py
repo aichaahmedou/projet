@@ -1,85 +1,95 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+import flask
+from flask import Flask, render_template, request, flash,redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-import os
-app = Flask(__name__)
-app.secret_key = "cairocoders-ednalan-06300131"
 
-# SqlAlchemy Database Configuration With Mysql
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ai.sqlite3'
-# mysql+pymysql://username:passwd@host/databasename
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Sondage.sqlite3'
+app.config['SECRET_KEY'] = "random String";
 
 db = SQLAlchemy(app)
 
-
-# Creating model table for our CRUD database
-class Employee(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
-    email = db.Column(db.String(100))
-    phone = db.Column(db.String(100))
-
-    def __init__(self, name, email, phone):
-        self.name = name
-        self.email = email
-        self.phone = phone
+class Sondage(db.Model):
+    __tablename__ = 'Sondage'
+    id_sondage = db.Column(db.Integer, primary_key=True)
+    libele = db.Column(db.String(20), nullable=False)
+    date_de_creation = db.Column(db.Date, nullable=False)
+    date_de_dernier_modification = db.Column(db.Date, nullable=False)
+    
+    
 
 
-# query on all our employee data
-@app.route('/')
-def Index():
-    all_data = Employee.query.all()
-    return render_template("index.html", employees=all_data)
+
+class Utilisateur(db.Model):
+    __tablename__ = 'Utilisateur'
+    id_user = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(20), nullable=False)
+    prenom = db.Column(db.Date, nullable=False)
+    mail = db.Column(db.String(20), nullable=False)
+    mot_de_passe = db.Column(db.String(20), nullable=False)
+    
+
+        
+        
+class Vote(db.Model):
+    __tablename__ = 'Vote'
+    date_vote = db.Column(db.Date, primary_key=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('Utilisateur.id_user'))
+    id_sondage = db.Column(db.Integer, db.ForeignKey('Sondage.id_sondage'))
+    mail = db.Column(db.String(20), nullable=False)
+    
+
+        
+        
+class Envoi(db.Model):
+    __tablename__ = 'Envoi'
+    date_envoi = db.Column(db.Date, primary_key=True)
+    id_user = db.Column(db.Integer, db.ForeignKey('Utilisateur.id_user'))
+    id_sondage = db.Column(db.Integer, db.ForeignKey('Sondage.id_sondage'))
+   
+    
+
+        
+class Proposition(db.Model):
+    __tablename__ = 'Proposition'
+    id_proposition = db.Column(db.Integer, primary_key=True)
+    intitule = db.Column(db.String(20), nullable=False)
+    id_QCM = db.Column(db.Integer, db.ForeignKey('QCM.id_QCM'))
+
+    
+
+               
+class Question(db.Model):
+    __tablename__ = 'Question'
+    id_question = db.Column(db.Integer, primary_key=True)
+    intitule_question = db.Column(db.String(20), nullable=False)
+    
 
 
-# insert data to mysql database via html forms
-@app.route('/insert', methods=['POST'])
-def insert():
-    if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        phone = request.form['phone']
-
-        my_data = Employee(name, email, phone)
-        db.session.add(my_data)
-        db.session.commit()
-
-        flash("Employee Inserted Successfully")
-        return redirect(url_for('Index'))
+class Reponse_text (db.Model):
+    __tablename__ = 'Reponse_text'
+    id_reponse_text=db.Column(db.Integer, primary_key=True)
+    id_question = db.Column(db.Integer, db.ForeignKey('QCM.id_QCM'))
+    reponse = db.Column(db.String(20), nullable=False)
+    id_user = db.Column(db.Integer, db.ForeignKey('Utilisateur.id_user'))
 
 
-# update employee
-@app.route('/update', methods=['GET', 'POST'])
-def update():
-    if request.method == 'POST':
-        my_data = Employee.query.get(request.form.get('id'))
 
-        my_data.name = request.form['name']
-        my_data.email = request.form['email']
-        my_data.phone = request.form['phone']
-
-        db.session.commit()
-        flash("Employee Updated Successfully")
-        return redirect(url_for('Index'))
+class QCM(db.Model):
+    __tablename__ = 'QCM'
+    id_QCM= db.Column(db.Integer, primary_key=True)
+    intitule_QCM = db.Column(db.String(20), nullable=False)
 
 
-# delete employee
-@app.route('/delete/<id>/', methods=['GET', 'POST'])
-def delete(id):
-    my_data = Employee.query.get(id)
-    db.session.delete(my_data)
-    db.session.commit()
-    flash("Employee Deleted Successfully")
-    return redirect(url_for('Index'))
+          
+class Reponse(db.Model):
+    __tablename__ = 'Reponse'
+    id_reponse=db.Column(db.Integer, primary_key=True)
+    id_QCM = db.Column(db.Integer, db.ForeignKey('QCM.id_QCM'))
+    id_proposition = db.Column(db.Integer, db.ForeignKey('Proposition.id_proposition'))
+    id_user = db.Column(db.Integer, db.ForeignKey('Utilisateur.id_user'))
 
+                
+                
 with app.app_context():
-
     db.create_all()
-
-    db.session.commit()
-
-    Employee.query.all()
-
-
-if __name__ == "__main__":
-    app.run(debug=True,port=20340)
+    app.run(debug=True, port=4000)
